@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>대시보드</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #f7f7f7;
+    }
+
+    h2 { margin-bottom: 10px; }
+
+    .stats {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .box {
+      background: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    th, td {
+      border-bottom: 1px solid #eee;
+      padding: 10px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #fafafa;
+    }
+
+    img.thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .status {
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 12px;
+      color: white;
+    }
+    .접수전 { background: purple; }
+    .접수 { background: orange; }
+    .진행중 { background: dodgerblue; }
+    .완료 { background: green; }
+
+    button {
+      padding: 6px 10px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h2>📊 신고 대시보드</h2>
+
+<div class="stats" id="stats"></div>
+
+
+
+<h3 style="margin-top:20px;">📋 전체 신고 목록</h3>
+
+<table>
+  <thead>
+    <tr>
+      <th>사진</th>
+      <th>건물</th>
+      <th>위치</th>
+      <th>내용</th>
+      <th>상태</th>
+      <th>시간</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<script>
+async function load() {
+  const res = await fetch("/reports");
+  const data = await res.json();
+
+  // 📊 통계
+  let 접수전 = 0;
+  let 접수 = 0;
+  let 진행중 = 0;
+  let 완료 = 0;
+
+data.forEach(d => {
+  if (d.status === "접수전") 접수전++;
+  else if (d.status === "접수") 접수++;
+  else if (d.status === "진행중") 진행중++;
+  else if (d.status === "완료") 완료++;
+});
+
+  document.getElementById("stats").innerHTML = `
+    <div class="box">📌 전체: ${data.length}</div>
+    <div class="box">🟣 접수전: ${접수전}</div>
+    <div class="box">🟡 접수: ${접수}</div>
+    <div class="box">🔵 진행중: ${진행중}</div>
+    <div class="box">🟢 완료: ${완료}</div>
+  `;
+
+  // 📋 테이블
+  document.getElementById("tbody").innerHTML =
+    data.map(d => `
+      <tr>
+        <td>
+          ${(d.imageUrls || []).length > 0
+  ? d.imageUrls.map(img =>
+      `<img class="thumb" src="${img}">`
+    ).join("")
+  : "없음"}
+        </td>
+        <td>${d.building}</td>
+        <td>${d.location}</td>
+        <td>${d.content}</td>
+        <td>
+          <span class="status ${d.status}">
+            ${d.status}
+          </span>
+        </td>
+        <td>${d.time}</td>
+      </tr>
+    `).join("");
+}
+
+load();
+setInterval(load, 5000);
+</script>
+
+</body>
+</html>

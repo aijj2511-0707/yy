@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시설물 신고</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    font-family:"맑은 고딕",sans-serif;
+}
+
+body{
+    background:#eef3f8;
+}
+
+.header{
+    background:#1976d2;
+    color:white;
+    padding:25px;
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+}
+
+.container{
+    max-width:700px;
+    margin:30px auto;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.15);
+}
+
+h2{
+    margin-bottom:20px;
+    color:#333;
+}
+
+label{
+    display:block;
+    margin-top:20px;
+    margin-bottom:8px;
+    font-weight:bold;
+}
+
+select,
+input,
+textarea{
+    width:100%;
+    padding:12px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    font-size:16px;
+}
+
+textarea{
+    resize:vertical;
+    min-height:120px;
+}
+
+input[type=file]{
+    border:none;
+}
+
+#preview{
+    display:none;
+    width:100%;
+    max-height:300px;
+    object-fit:cover;
+    margin-top:15px;
+    border-radius:10px;
+    border:1px solid #ddd;
+}
+
+button{
+    width:100%;
+    margin-top:30px;
+    background:#1976d2;
+    color:white;
+    border:none;
+    padding:15px;
+    font-size:18px;
+    border-radius:10px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+button:hover{
+    background:#1259a7;
+}
+
+.footer{
+    text-align:center;
+    margin-top:20px;
+    color:#888;
+    font-size:14px;
+}
+</style>
+
+</head>
+<body>
+
+<div class="header">
+🏫 학교 시설물 불편 신고
+</div>
+
+<div class="container">
+
+<h2>신고 접수</h2>
+
+<form id="reportForm">
+
+<label>건물</label>
+
+<select name="building" required>
+<option value="">선택하세요</option>
+<option>초등본관</option>
+<option>초등신관</option>
+<option>유치원</option>
+<option>중등본관</option>
+<option>체육관</option>
+<option>운동장</option>
+<option>기타</option>
+</select>
+
+<label>위치</label>
+<input
+type="text"
+name="location"
+placeholder="예) 2층 화장실 앞"
+required>
+
+<label>신고 내용</label>
+
+<textarea
+name="content"
+placeholder=" 문제를 자세히 작성해주세요."
+required></textarea>
+
+<label>사진 첨부</label>
+
+<input
+type="file"
+id="photo"
+name="photos"
+accept="image/*"
+capture="environment"
+multiple>
+
+<div id="preview"></div>
+
+<button type="submit">
+📤 신고하기
+</button>
+
+</form>
+
+<div class="footer">
+시설물 불편 신고
+</div>
+
+</div>
+
+<script>
+
+const photo = document.getElementById("photo");
+const preview = document.getElementById("preview");
+
+photo.onchange = () => {
+
+    preview.innerHTML = "";
+
+    [...photo.files].forEach(file => {
+
+        const img = document.createElement("img");
+
+        img.src = URL.createObjectURL(file);
+
+        img.style.width = "120px";
+        img.style.height = "120px";
+        img.style.objectFit = "cover";
+        img.style.margin = "5px";
+        img.style.borderRadius = "8px";
+
+        preview.appendChild(img);
+
+    });
+
+};
+
+document.getElementById("reportForm").onsubmit=async e=>{
+
+e.preventDefault();
+
+const formData=new FormData(e.target);
+
+const res=await fetch("/report",{
+
+method:"POST",
+
+body:formData
+
+});
+
+const result=await res.json();
+
+if(result.ok){
+
+alert("신고가 접수되었습니다.");
+
+e.target.reset();
+
+preview.style.display="none";
+
+}else{
+
+alert("신고 실패");
+
+}
+
+};
+
+</script>
+
+</body>
+</html>

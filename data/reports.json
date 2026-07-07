@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1783319875815,
+    "building": "초등본관",
+    "location": "ㅈㅈ",
+    "content": "ㄷㄷㄷ",
+    "imageUrls": [
+      "http://localhost:3000/uploads/fef76ad15c68f0bcf0129865ae63562e",
+      "http://localhost:3000/uploads/91eb88f5c4c627c9fb75f7cf18e13f0a"
+    ],
+    "status": "접수",
+    "time": "2026-07-06 06:37"
+  },
+  {
+    "id": 1783320444211,
+    "building": "초등본관",
+    "location": "ㅗㅗㅗ",
+    "content": "ㅎㅎㄹ호",
+    "imageUrls": [
+      "http://localhost:3000/uploads/b3c93066965887104dd53875f432cd8a",
+      "http://localhost:3000/uploads/2207ecc88d7590ba4d6536baf6485409",
+      "http://localhost:3000/uploads/d29503827e16ff712edd57183151467a"
+    ],
+    "status": "접수전",
+    "time": "2026-07-06 06:47"
+  }
+]
