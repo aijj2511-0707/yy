@@ -159,7 +159,7 @@ async function load(){
 
     const res=await fetch("/reports");
     const data=await res.json();
-
+    currentImages = data;
     let pre=0;
     let accept=0;
     let progress=0;
@@ -193,11 +193,22 @@ async function load(){
 <tr>
 
 <td>
-${(r.imageUrls || []).map(img =>
-    `<img src="${img}" onclick="showImage('${img}')">`
+${(r.imageUrls || []).map((img, index) =>
+    `<img src="${img}" onclick="showImage(${r.id}, ${index})">`
 ).join("")}
 </td>
+let currentImages = [];
 
+function showImage(id, index){
+
+    const report = currentImages.find(r => r.id === id);
+
+    document.getElementById("viewer").style.display="flex";
+
+    document.getElementById("bigImage").src =
+        report.imageUrls[index];
+
+}
 <td>${r.building}</td>
 
 <td>${r.location}</td>

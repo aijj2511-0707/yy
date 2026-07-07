@@ -47,9 +47,6 @@ function saveReports(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
 }
 
-/* ⭐ 중요: 서버 주소 */
-const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
-
 /* 신고 등록 */
 app.post("/report", upload.array("photos", 10), (req, res) => {
   try {
@@ -123,6 +120,8 @@ app.delete("/report/:id", (req, res) => {
 
 
 /* 서버 실행 */
-app.listen(3000, () => {
-  console.log("서버 실행: http://localhost:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`서버 실행: ${PORT}`);
 });
