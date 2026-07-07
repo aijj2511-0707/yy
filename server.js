@@ -1,15 +1,33 @@
+require("dotenv").config();
+
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
-
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const app = express();
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME,
+  api_key: process.env.CLOUDINARY_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET
+});
+
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: "reports",
+    allowed_formats: ["jpg", "png", "jpeg"]
+  }
+});
+
+const upload = multer({ storage });
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 /* 폴더 생성 */
-if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 if (!fs.existsSync("data")) fs.mkdirSync("data");
 
 const DB_FILE = "./data/reports.json";
@@ -18,9 +36,6 @@ const DB_FILE = "./data/reports.json";
 if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, "[]");
 }
-
-/* multer */
-const upload = multer({ dest: "uploads/" });
 
 /* 데이터 읽기 */
 function getReports() {
@@ -33,7 +48,7 @@ function saveReports(data) {
 }
 
 /* ⭐ 중요: 서버 주소 */
-const BASE_URL = "http://localhost:3000";
+const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 
 /* 신고 등록 */
 app.post("/report", upload.array("photos", 10), (req, res) => {
@@ -48,7 +63,7 @@ app.post("/report", upload.array("photos", 10), (req, res) => {
 
     if (files) {
       files.forEach(file => {
-        imageUrls.push(BASE_URL + "/uploads/" + file.filename);
+        imageUrls.push(file.path);
       });
     }
 
@@ -106,8 +121,6 @@ app.delete("/report/:id", (req, res) => {
   res.json({ ok: true });
 });
 
-/* 이미지 접근 */
-app.use("/uploads", express.static("uploads"));
 
 /* 서버 실행 */
 app.listen(3000, () => {
