@@ -332,7 +332,7 @@ await fetch("/reports");
 const data =
 await res.json();
 
-
+console.log(data);
 
 
 
@@ -595,11 +595,11 @@ alert("데이터 불러오기 실패");
 function formatTime(time){
 
     if(!time){
-        return "";
+        return "시간 없음";
     }
 
 
-    // Firebase Timestamp
+    // Firestore Timestamp
     if(time.seconds){
 
         return new Date(
@@ -609,13 +609,23 @@ function formatTime(time){
     }
 
 
-    // 문자열 날짜
+    // Firestore Timestamp 변환 형태
+    if(time._seconds){
+
+        return new Date(
+            time._seconds * 1000
+        ).toLocaleString("ko-KR");
+
+    }
+
+
+    // 날짜 문자열
     if(typeof time === "string"){
 
         const date = new Date(time);
 
 
-        if(!isNaN(date)){
+        if(!isNaN(date.getTime())){
 
             return date.toLocaleString("ko-KR");
 
@@ -624,7 +634,7 @@ function formatTime(time){
     }
 
 
-    return "시간 없음";
+    return JSON.stringify(time);
 
 }
 
