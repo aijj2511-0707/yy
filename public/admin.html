@@ -231,9 +231,8 @@ ${
 (r.imageUrls || []).map(img =>
 
 `
-<img 
-src="${img}" 
-onclick="showImage('${img}')">
+<img src="${img.url}" 
+onclick="showImage('${img.url}')">
 `
 
 ).join("")
