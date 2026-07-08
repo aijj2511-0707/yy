@@ -2,76 +2,129 @@ require("dotenv").config();
 
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
+const admin = require("firebase-admin");
 
 const app = express();
 
 
-/* =========================
-   Cloudinary 설정
-========================= */
+// =========================
+// Firebase 설정
+// =========================
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_NAME,
-  api_key: process.env.CLOUDINARY_KEY,
-  api_secret: process.env.CLOUDINARY_SECRET
+const serviceAccount = {
+
+  type: process.env.FIREBASE_TYPE,
+
+  project_id: process.env.FIREBASE_PROJECT_ID,
+
+  private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+
+  private_key:
+  process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+
+  client_email: process.env.FIREBASE_CLIENT_EMAIL,
+
+  client_id: process.env.FIREBASE_CLIENT_ID,
+
+  auth_uri:
+  "https://accounts.google.com/o/oauth2/auth",
+
+  token_uri:
+  "https://oauth2.googleapis.com/token",
+
+  auth_provider_x509_cert_url:
+  "https://www.googleapis.com/oauth2/v1/certs",
+
+  client_x509_cert_url:
+  process.env.FIREBASE_CLIENT_CERT_URL
+
+};
+
+
+admin.initializeApp({
+
+credential:
+admin.credential.cert(serviceAccount)
+
 });
 
 
 
-/* =========================
-   이미지 저장 설정
-========================= */
+const db = admin.firestore();
+
+
+
+
+// =========================
+// Cloudinary 설정
+// =========================
+
+cloudinary.config({
+
+    cloud_name: process.env.CLOUDINARY_NAME,
+
+    api_key: process.env.CLOUDINARY_KEY,
+
+    api_secret: process.env.CLOUDINARY_SECRET
+
+});
+
+
+
+
+// =========================
+// 이미지 업로드 설정
+// =========================
 
 const storage = new CloudinaryStorage({
 
-  cloudinary,
+    cloudinary,
 
-  params: {
+    params: {
 
-    folder: "reports",
+        folder:"reports",
 
-    allowed_formats: [
-      "jpg",
-      "jpeg",
-      "png",
-      "webp"
-    ]
+        allowed_formats:[
+            "jpg",
+            "jpeg",
+            "png",
+            "webp"
+        ]
 
-  }
+    }
 
 });
 
 
-
-/* =========================
-   Multer 설정
-========================= */
 
 const upload = multer({
 
-  storage,
+    storage,
 
-  limits:{
-    fileSize:5 * 1024 * 1024
-  }
+    limits:{
+
+        fileSize:
+        5 * 1024 * 1024
+
+    }
 
 });
 
 
 
-/* =========================
-   기본 설정
-========================= */
+
+// =========================
+// 기본 설정
+// =========================
 
 app.use(express.json());
 
 app.use(
-  express.urlencoded({
-    extended:true
-  })
+    express.urlencoded({
+        extended:true
+    })
 );
 
 
@@ -79,87 +132,30 @@ app.use(express.static("public"));
 
 
 
-/* =========================
-   데이터 파일
-========================= */
-
-if(!fs.existsSync("data")){
-
-  fs.mkdirSync("data");
-
-}
 
 
-const DB_FILE="./data/reports.json";
-
-
-
-if(!fs.existsSync(DB_FILE)){
-
-  fs.writeFileSync(
-    DB_FILE,
-    "[]"
-  );
-
-}
-
-
-
-/* =========================
-   데이터 함수
-========================= */
-
-
-function getReports(){
-
-  return JSON.parse(
-    fs.readFileSync(DB_FILE)
-  );
-
-}
-
-
-
-function saveReports(data){
-
-  fs.writeFileSync(
-    DB_FILE,
-    JSON.stringify(data,null,2)
-  );
-
-}
-
-
-
-
-
-/* =========================
-   신고 등록
-========================= */
-
+// =========================
+// 신고 등록
+// =========================
 
 app.post(
 "/report",
 upload.array("photos",10),
-(req,res)=>{
+async(req,res)=>{
 
 
 try{
 
 
 const {
-  building,
-  location,
-  content
+    building,
+    location,
+    content
 }=req.body;
 
 
 
 const files=req.files || [];
-
-
-
-const reports=getReports();
 
 
 
@@ -170,13 +166,13 @@ const imageUrls=[];
 files.forEach(file=>{
 
 
-  imageUrls.push({
+    imageUrls.push({
 
-    url:file.path,
+        url:file.path,
 
-    public_id:file.filename
+        public_id:file.filename
 
-  });
+    });
 
 
 });
@@ -184,46 +180,30 @@ files.forEach(file=>{
 
 
 
-const newReport={
+await db
+.collection("reports")
+.add({
 
+    building,
 
-  id:Date.now(),
+    location,
 
-  building,
+    content,
 
-  location,
+    imageUrls,
 
-  content,
+    status:"접수전",
 
+    time:
+    new Date()
 
-  imageUrls,
-
-
-  status:"접수전",
-
-
-  time:
-  new Date()
-  .toISOString()
-  .slice(0,16)
-  .replace("T"," ")
-
-
-};
-
-
-
-reports.push(newReport);
-
-
-
-saveReports(reports);
+});
 
 
 
 res.json({
 
- ok:true
+    ok:true
 
 });
 
@@ -238,9 +218,9 @@ console.error(e);
 
 res.status(500).json({
 
- ok:false,
+    ok:false,
 
- error:e.message
+    error:e.message
 
 });
 
@@ -248,6 +228,7 @@ res.status(500).json({
 }
 
 
+
 });
 
 
@@ -256,36 +237,62 @@ res.status(500).json({
 
 
 
-/* =========================
-   신고 목록
-========================= */
-
+// =========================
+// 신고 목록
+// =========================
 
 app.get(
 "/reports",
-(req,res)=>{
+async(req,res)=>{
 
 
 try{
 
 
-const reports=getReports();
+const snapshot =
+await db
+.collection("reports")
+.orderBy("time","desc")
+.get();
 
 
-res.json(
- reports.reverse()
-);
+
+const reports=[];
+
+
+
+snapshot.forEach(doc=>{
+
+
+reports.push({
+
+    id:doc.id,
+
+    ...doc.data()
+
+});
+
+
+});
+
+
+
+res.json(reports);
 
 
 
 }catch(e){
 
 
+console.error(e);
+
+
+
 res.status(500).json({
 
- ok:false,
+    ok:false,
 
- error:e.message
+    error:e.message
 
 });
 
@@ -303,56 +310,39 @@ res.status(500).json({
 
 
 
-/* =========================
-   상태 변경
-========================= */
-
+// =========================
+// 상태 변경
+// =========================
 
 app.post(
 "/status",
-(req,res)=>{
+async(req,res)=>{
 
 
 try{
 
 
 const {
- id,
- status
+    id,
+    status
 }=req.body;
 
 
 
-const reports=getReports();
+await db
+.collection("reports")
+.doc(id)
+.update({
 
+    status
 
-
-const updated=
-reports.map(r=>
-
-r.id==id
-
-?
-{
- ...r,
- status
-}
-
-:
-
-r
-
-);
-
-
-
-saveReports(updated);
+});
 
 
 
 res.json({
 
-ok:true
+    ok:true
 
 });
 
@@ -361,11 +351,15 @@ ok:true
 }catch(e){
 
 
+console.error(e);
+
+
+
 res.status(500).json({
 
-ok:false,
+    ok:false,
 
-error:e.message
+    error:e.message
 
 });
 
@@ -383,11 +377,11 @@ error:e.message
 
 
 
-/* =========================
-   신고 삭제
-   + Cloudinary 이미지 삭제
-========================= */
 
+// =========================
+// 신고 삭제
+// Firebase + Cloudinary
+// =========================
 
 app.delete(
 "/report/:id",
@@ -397,45 +391,62 @@ async(req,res)=>{
 try{
 
 
-const id=
-Number(
-req.params.id
-);
+const id=req.params.id;
 
 
 
-const reports=getReports();
+const docRef =
+db
+.collection("reports")
+.doc(id);
 
 
 
-const target=
-reports.find(
-r=>r.id===id
-);
+const doc =
+await docRef.get();
 
 
 
-if(target && target.imageUrls){
+if(!doc.exists){
 
 
-for(const image of target.imageUrls){
+return res.status(404).json({
+
+    ok:false,
+
+    error:"신고 없음"
+
+});
 
 
-try{
+}
 
 
-await cloudinary.uploader.destroy(
- image.public_id
-);
+
+const report=doc.data();
 
 
-}catch(err){
 
 
-console.error(
-"Cloudinary 삭제 실패:",
-err
-);
+// Cloudinary 이미지 삭제
+
+if(report.imageUrls){
+
+
+for(const image of report.imageUrls){
+
+
+    if(image.public_id){
+
+
+        await cloudinary
+        .uploader
+        .destroy(
+            image.public_id
+        );
+
+
+    }
 
 
 }
@@ -444,26 +455,17 @@ err
 }
 
 
-}
 
 
+// Firestore 삭제
 
-
-
-const filtered=
-reports.filter(
-r=>r.id!==id
-);
-
-
-
-saveReports(filtered);
+await docRef.delete();
 
 
 
 res.json({
 
-ok:true
+    ok:true
 
 });
 
@@ -478,9 +480,9 @@ console.error(e);
 
 res.status(500).json({
 
-ok:false,
+    ok:false,
 
-error:e.message
+    error:e.message
 
 });
 
@@ -488,6 +490,7 @@ error:e.message
 }
 
 
+
 });
 
 
@@ -496,12 +499,9 @@ error:e.message
 
 
 
-
-
-/* =========================
-   업로드 오류 처리
-========================= */
-
+// =========================
+// Multer 오류 처리
+// =========================
 
 app.use(
 (err,req,res,next)=>{
@@ -516,9 +516,10 @@ if(err.code==="LIMIT_FILE_SIZE"){
 
 return res.status(400).json({
 
-ok:false,
+    ok:false,
 
-error:"사진은 5MB 이하만 업로드 가능합니다."
+    error:
+    "사진은 5MB 이하만 가능합니다."
 
 });
 
@@ -529,9 +530,9 @@ error:"사진은 5MB 이하만 업로드 가능합니다."
 
 res.status(500).json({
 
-ok:false,
+    ok:false,
 
-error:err.message
+    error:err.message
 
 });
 
@@ -546,13 +547,11 @@ error:err.message
 
 
 
+// =========================
+// 서버 실행
+// =========================
 
-/* =========================
-   서버 실행
-========================= */
-
-
-const PORT=
+const PORT =
 process.env.PORT || 3000;
 
 
