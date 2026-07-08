@@ -1,0 +1,21 @@
+name: Wake Render
+
+on:
+  schedule:
+    # 한국시간 08:00, 10:00, 12:00, 14:00, 16:00, 18:00
+    - cron: '0 23 * * *'  # 08:00 KST
+    - cron: '0 1 * * *'   # 10:00 KST
+    - cron: '0 3 * * *'   # 12:00 KST
+    - cron: '0 5 * * *'   # 14:00 KST
+    - cron: '0 7 * * *'   # 16:00 KST
+    - cron: '0 9 * * *'   # 18:00 KST
+
+  workflow_dispatch:
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wake Render
+        run: curl -L https://yy-dzls.onrender.com/admin.html
