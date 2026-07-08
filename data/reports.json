@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": 1783492232281,
+    "building": "초등본관",
+    "location": "111",
+    "content": "111",
+    "imageUrls": [
+      "https://res.cloudinary.com/hytkkrn9/image/upload/v1783492232/reports/cgocp5tolswq37j4oaer.png"
+    ],
+    "status": "접수전",
+    "time": "2026-07-08 06:30"
+  }
+]

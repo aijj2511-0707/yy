@@ -48,6 +48,7 @@ th,td{
     padding:10px;
     border:1px solid #ddd;
     text-align:center;
+    vertical-align:middle;
 }
 
 img{
@@ -56,6 +57,7 @@ img{
     object-fit:cover;
     border-radius:8px;
     cursor:pointer;
+    margin:3px;
 }
 
 button{
@@ -106,6 +108,7 @@ button{
     background:rgba(0,0,0,.8);
     justify-content:center;
     align-items:center;
+    z-index:999;
 }
 
 #viewer img{
@@ -124,10 +127,15 @@ button{
 
 <div class="stats" id="stats"></div>
 
-<button class="refresh" onclick="load()">🔄 새로고침</button>
+
+<button class="refresh" onclick="load()">
+🔄 새로고침
+</button>
+
 <button onclick="location.href='/dashboard.html'">
 📊 대시보드
 </button>
+
 
 <table>
 
@@ -149,21 +157,31 @@ button{
 
 </table>
 
+
 <div id="viewer" onclick="closeViewer()">
-<img id="bigImage">
+    <img id="bigImage">
 </div>
+
 
 <script>
 
+let currentImages = [];
+
+
 async function load(){
 
-    const res=await fetch("/reports");
-    const data=await res.json();
+    const res = await fetch("/reports");
+
+    const data = await res.json();
+
     currentImages = data;
-    let pre=0;
-    let accept=0;
-    let progress=0;
-    let done=0;
+
+
+    let pre = 0;
+    let accept = 0;
+    let progress = 0;
+    let done = 0;
+
 
     data.forEach(r=>{
 
@@ -174,81 +192,110 @@ async function load(){
 
     });
 
-    document.getElementById("stats").innerHTML=`
 
-    <div class="card">🟣 접수전<br>${pre}</div>
 
-    <div class="card">🟡 접수<br>${accept}</div>
+    document.getElementById("stats").innerHTML = `
 
-    <div class="card">🔵 진행중<br>${progress}</div>
+    <div class="card">
+    🟣 접수전<br>${pre}
+    </div>
 
-    <div class="card">🟢 완료<br>${done}</div>
+    <div class="card">
+    🟡 접수<br>${accept}
+    </div>
 
-    <div class="card">📌 전체<br>${data.length}</div>
+    <div class="card">
+    🔵 진행중<br>${progress}
+    </div>
+
+    <div class="card">
+    🟢 완료<br>${done}
+    </div>
+
+    <div class="card">
+    📌 전체<br>${data.length}
+    </div>
 
     `;
 
-    document.getElementById("tbody").innerHTML=data.map(r=>`
+
+
+    document.getElementById("tbody").innerHTML = data.map(r=>`
 
 <tr>
 
+
 <td>
-${(r.imageUrls || []).map((img, index) =>
-    `<img src="${img}" onclick="showImage(${r.id}, ${index})">`
-).join("")}
-</td>
-let currentImages = [];
 
-function showImage(id, index){
+${
+(r.imageUrls || []).map(img =>
 
-    const report = currentImages.find(r => r.id === id);
+`
+<img 
+src="${img}" 
+onclick="showImage('${img}')">
+`
 
-    document.getElementById("viewer").style.display="flex";
-
-    document.getElementById("bigImage").src =
-        report.imageUrls[index];
+).join("")
 
 }
+
+</td>
+
+
 <td>${r.building}</td>
+
 
 <td>${r.location}</td>
 
+
 <td>${r.content}</td>
+
 
 <td>${r.status}</td>
 
+
 <td>${r.time}</td>
 
+
 <td>
+
 
 <button class="pre"
 onclick="update(${r.id},'접수전')">
 접수전
 </button>
 
+
 <button class="accept"
 onclick="update(${r.id},'접수')">
 접수
 </button>
+
 
 <button class="progress"
 onclick="update(${r.id},'진행중')">
 진행중
 </button>
 
+
 <button class="done"
 onclick="update(${r.id},'완료')">
 완료
 </button>
 
+
 <br>
+
 
 <button class="delete"
 onclick="removeReport(${r.id})">
 🗑 삭제
 </button>
 
+
 </td>
+
 
 </tr>
 
@@ -256,7 +303,10 @@ onclick="removeReport(${r.id})">
 
 }
 
+
+
 async function update(id,status){
+
 
     await fetch("/status",{
 
@@ -273,43 +323,67 @@ async function update(id,status){
 
     });
 
+
     load();
 
 }
 
+
+
+
 async function removeReport(id){
+
 
     if(!confirm("정말 삭제하시겠습니까?")){
         return;
     }
 
+
     await fetch("/report/"+id,{
+
         method:"DELETE"
+
     });
+
 
     load();
 
 }
 
+
+
+
 function showImage(src){
+
 
     document.getElementById("viewer").style.display="flex";
 
-    document.getElementById("bigImage").src=src;
+
+    document.getElementById("bigImage").src = src;
+
 
 }
+
+
 
 function closeViewer(){
 
+
     document.getElementById("viewer").style.display="none";
+
 
 }
 
+
+
 load();
+
 
 setInterval(load,5000);
 
+
 </script>
+
 
 </body>
 </html>
