@@ -1,5 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -66,15 +64,28 @@ input[type=file]{
     border:none;
 }
 
+
+/* 사진 미리보기 */
 #preview{
     display:none;
     width:100%;
-    max-height:300px;
-    object-fit:cover;
     margin-top:15px;
+    padding:10px;
+    border:1px solid #ddd;
     border-radius:10px;
+    background:#fafafa;
+}
+
+
+.preview-img{
+    width:120px;
+    height:120px;
+    object-fit:cover;
+    margin:5px;
+    border-radius:8px;
     border:1px solid #ddd;
 }
+
 
 button{
     width:100%;
@@ -89,9 +100,17 @@ button{
     transition:.3s;
 }
 
+
 button:hover{
     background:#1259a7;
 }
+
+
+button:disabled{
+    background:#999;
+    cursor:not-allowed;
+}
+
 
 .footer{
     text-align:center;
@@ -99,49 +118,82 @@ button:hover{
     color:#888;
     font-size:14px;
 }
+
 </style>
 
 </head>
+
+
 <body>
+
 
 <div class="header">
 🏫 학교 시설물 불편 신고
 </div>
 
+
+
 <div class="container">
+
 
 <h2>신고 접수</h2>
 
+
+
 <form id="reportForm">
+
 
 <label>건물</label>
 
+
 <select name="building" required>
+
 <option value="">선택하세요</option>
+
 <option>초등본관</option>
+
 <option>초등신관</option>
+
 <option>유치원</option>
+
 <option>중등본관</option>
+
 <option>체육관</option>
+
 <option>운동장</option>
+
 <option>기타</option>
+
 </select>
 
+
+
+
 <label>위치</label>
+
+
 <input
 type="text"
 name="location"
 placeholder="예) 2층 화장실 앞"
 required>
 
+
+
+
 <label>신고 내용</label>
+
 
 <textarea
 name="content"
-placeholder=" 문제를 자세히 작성해주세요."
+placeholder="문제를 자세히 작성해주세요."
 required></textarea>
 
+
+
+
 <label>사진 첨부</label>
+
 
 <input
 type="file"
@@ -150,84 +202,212 @@ name="photos"
 accept="image/*"
 multiple>
 
+
+
+
 <div id="preview"></div>
 
-<button type="submit">
+
+
+<button type="submit" id="submitBtn">
 📤 신고하기
 </button>
 
+
+
 </form>
+
+
 
 <div class="footer">
 시설물 불편 신고
 </div>
 
+
+
 </div>
+
+
+
+
 
 <script>
 
+
 const photo = document.getElementById("photo");
+
 const preview = document.getElementById("preview");
+
+const submitBtn = document.getElementById("submitBtn");
+
+
+
+
+// 사진 미리보기
 
 photo.onchange = () => {
 
-    preview.innerHTML = "";
+
+    preview.innerHTML="";
+
 
     if(photo.files.length > 0){
-        preview.style.display = "block";
+
+        preview.style.display="block";
+
+    }else{
+
+        preview.style.display="none";
+
     }
 
-    [...photo.files].forEach(file => {
 
-        const img = document.createElement("img");
 
-        img.src = URL.createObjectURL(file);
+    [...photo.files].forEach(file=>{
 
-        img.style.width = "120px";
-        img.style.height = "120px";
-        img.style.objectFit = "cover";
-        img.style.margin = "5px";
-        img.style.borderRadius = "8px";
+
+        const img=document.createElement("img");
+
+
+        img.src=URL.createObjectURL(file);
+
+
+        img.className="preview-img";
+
 
         preview.appendChild(img);
 
+
     });
+
 
 };
 
-document.getElementById("reportForm").onsubmit=async e=>{
+
+
+
+
+// 신고 제출
+
+document.getElementById("reportForm").onsubmit = async e => {
+
 
 e.preventDefault();
 
-const formData=new FormData(e.target);
 
-const res=await fetch("/report",{
 
-method:"POST",
+// 사진 용량 확인
 
-body:formData
+for(const file of photo.files){
 
-});
 
-const result=await res.json();
+    if(file.size > 5 * 1024 * 1024){
 
-if(result.ok){
 
-alert("신고가 접수되었습니다.");
+        alert("사진은 5MB 이하만 업로드 가능합니다.");
 
-e.target.reset();
 
-preview.style.display="none";
+        return;
 
-}else{
 
-alert("신고 실패");
+    }
+
 
 }
 
+
+
+const formData=new FormData(e.target);
+
+
+
+try{
+
+
+    submitBtn.disabled=true;
+
+    submitBtn.innerText="📤 접수 중...";
+
+
+
+    const res=await fetch("/report",{
+
+
+        method:"POST",
+
+
+        body:formData
+
+
+    });
+
+
+
+    const result=await res.json();
+
+
+
+    if(result.ok){
+
+
+        alert("신고가 접수되었습니다.");
+
+
+
+        e.target.reset();
+
+
+
+        preview.style.display="none";
+
+
+        preview.innerHTML="";
+
+
+
+    }else{
+
+
+        alert("신고 접수에 실패했습니다.");
+
+
+    }
+
+
+
+}catch(error){
+
+
+    console.error(error);
+
+
+    alert("서버 연결 오류가 발생했습니다.");
+
+
+}
+
+
+
+finally{
+
+
+    submitBtn.disabled=false;
+
+
+    submitBtn.innerText="📤 신고하기";
+
+
+}
+
+
+
 };
+
+
 
 </script>
 
+
 </body>
+
 </html>
