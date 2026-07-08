@@ -594,37 +594,39 @@ alert("데이터 불러오기 실패");
 
 function formatTime(time){
 
+    if(!time){
+        return "";
+    }
 
-if(!time){
 
-return "";
+    // Firebase Timestamp
+    if(time.seconds){
+
+        return new Date(
+            time.seconds * 1000
+        ).toLocaleString("ko-KR");
+
+    }
+
+
+    // 문자열 날짜
+    if(typeof time === "string"){
+
+        const date = new Date(time);
+
+
+        if(!isNaN(date)){
+
+            return date.toLocaleString("ko-KR");
+
+        }
+
+    }
+
+
+    return "시간 없음";
 
 }
-
-
-
-if(time.seconds){
-
-
-return new Date(
-
-time.seconds * 1000
-
-)
-
-.toLocaleString();
-
-
-}
-
-
-
-return time;
-
-
-
-}
-
 
 
 

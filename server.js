@@ -194,8 +194,7 @@ await db
 
     status:"접수전",
 
-    time:
-    new Date()
+    time: admin.firestore.Timestamp.now()
 
 });
 

@@ -621,32 +621,41 @@ onclick="removeReport('${r.id}')">
 // 시간 표시
 // =====================
 
-function formatTime(t){
+function formatTime(time){
+
+    if(!time){
+        return "";
+    }
 
 
-if(!t)
-return "";
+    // Firebase Timestamp
+    if(time.seconds){
+
+        return new Date(
+            time.seconds * 1000
+        ).toLocaleString("ko-KR");
+
+    }
 
 
+    // 문자열 날짜
+    if(typeof time === "string"){
 
-if(t.seconds){
+        const date = new Date(time);
 
-return new Date(
-t.seconds*1000
-).toLocaleString();
+
+        if(!isNaN(date)){
+
+            return date.toLocaleString("ko-KR");
+
+        }
+
+    }
+
+
+    return "시간 없음";
 
 }
-
-
-
-return new Date(t)
-.toLocaleString();
-
-
-}
-
-
-
 
 
 
