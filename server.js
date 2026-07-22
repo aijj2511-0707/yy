@@ -551,7 +551,7 @@ width:15
 
 {
 header:"등록시간",
-width:25
+width:23
 }
 
 ];
@@ -929,18 +929,18 @@ imageId,
 
 tl:{
 
-col:1,
+col:1.25,
 
-row:row.number-1
+row:row.number-1 + 0.15
 
 },
 
 
 ext:{
 
-width:150,
+width:160,
 
-height:150
+height:160
 
 }
 
