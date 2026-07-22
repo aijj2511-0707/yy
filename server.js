@@ -498,27 +498,26 @@ res.status(500).json({
 
 // =========================
 // 신고 엑셀 다운로드
-// 여러 사진 + 압축 이미지
+// 여러 사진 + 압축 이미지 + 디자인
 // =========================
 
 app.get("/reports/excel", async (req,res)=>{
 
-
 try{
 
 
-const workbook =
-new ExcelJS.Workbook();
-
+const workbook = new ExcelJS.Workbook();
 
 const sheet =
 workbook.addWorksheet("불편신고");
 
 
 
-// 컬럼 설정
+// =========================
+// 표 헤더 설정
+// =========================
 
-sheet.columns=[
+sheet.columns = [
 
 {
 header:"번호",
@@ -532,12 +531,12 @@ width:25
 
 {
 header:"건물",
-width:20
+width:15
 },
 
 {
 header:"위치",
-width:20
+width:15
 },
 
 {
@@ -559,20 +558,80 @@ width:25
 
 
 
-// 헤더 스타일
+// =========================
+// 제목 추가
+// =========================
 
-sheet.getRow(1).font={
+// 기존 헤더를 한 줄 아래로 이동
+sheet.insertRow(1,[]);
+
+
+sheet.mergeCells("A1:G1");
+
+
+const titleCell =
+sheet.getCell("A1");
+
+
+titleCell.value =
+"🏫 불편 신고 접수 현황";
+
+
+titleCell.font={
 
 bold:true,
 
+size:18,
+
 color:{
-argb:"FFFFFFFF"
+argb:"000000"
 }
 
 };
 
 
-sheet.getRow(1).fill={
+titleCell.fill={
+
+type:"pattern",
+
+pattern:"solid",
+
+fgColor:{
+argb:"FFFFFF"
+}
+
+};
+
+
+titleCell.alignment={
+
+horizontal:"center",
+
+vertical:"middle"
+
+};
+
+
+sheet.getRow(1).height=35;
+
+
+
+
+// =========================
+// 헤더 스타일
+// =========================
+
+const header =
+sheet.getRow(2);
+
+
+header.height=25;
+
+
+header.eachCell((cell)=>{
+
+
+cell.fill={
 
 type:"pattern",
 
@@ -585,6 +644,30 @@ argb:"1976D2"
 };
 
 
+cell.font={
+
+bold:true,
+
+color:{
+argb:"FFFFFF"
+}
+
+};
+
+
+cell.alignment={
+
+horizontal:"center",
+
+vertical:"middle"
+
+};
+
+
+});
+
+
+
 
 const snapshot =
 await db
@@ -594,9 +677,9 @@ await db
 
 
 
-let row = 2;
 
-let no = 1;
+let no=1;
+
 
 
 
@@ -622,9 +705,21 @@ r.time
 
 
 
-// 기본 데이터 입력
+const images =
+r.imageUrls || [];
 
 
+
+
+// =========================
+// 사진 없는 신고
+// =========================
+
+if(images.length===0){
+
+
+
+const row =
 sheet.addRow([
 
 no,
@@ -645,141 +740,43 @@ time
 
 
 
+row.height=30;
 
 
-// 사진 영역
 
-let photoRow=row;
+row.eachCell((cell)=>{
 
 
+cell.fill={
 
-if(
-r.imageUrls &&
-r.imageUrls.length>0
-){
+type:"pattern",
 
+pattern:"solid",
 
+fgColor:{
+argb:"FFFFFF"
+}
 
-    let height =
-    90 * r.imageUrls.length;
+};
 
 
+cell.alignment={
 
-    // 행 높이 증가
+vertical:"middle",
 
-    sheet.getRow(row).height =
-    Math.max(90,height);
+wrapText:true
 
+};
 
 
-    let currentRow=row-1;
+});
 
 
 
-    for(
-    const image of r.imageUrls
-    ){
+no++;
 
 
-
-        try{
-
-
-        let imageUrl =
-        image.url;
-
-
-
-        // Cloudinary 압축 변환
-
-        imageUrl =
-        imageUrl.replace(
-
-        "/upload/",
-
-        "/upload/w_500,h_500,c_fill,q_auto/"
-
-        );
-
-
-
-
-
-        const response =
-        await axios.get(
-
-        imageUrl,
-
-        {
-        responseType:"arraybuffer"
-        }
-
-        );
-
-
-
-
-
-        const imageId =
-        workbook.addImage({
-
-            buffer:
-            response.data,
-
-            extension:"jpg"
-
-        });
-
-
-
-
-
-        // 세로 배치
-
-        sheet.addImage(
-
-        imageId,
-
-        {
-
-        tl:{
-            col:1,
-            row:currentRow
-        },
-
-
-        ext:{
-
-            width:90,
-
-            height:90
-
-        }
-
-
-        });
-
-
-
-        currentRow++;
-
-
-
-        }catch(e){
-
-
-        console.log(
-        "이미지 오류:",
-        e.message
-        );
-
-
-        }
-
-
-
-    }
-
+continue;
 
 
 }
@@ -787,13 +784,337 @@ r.imageUrls.length>0
 
 
 
-row++;
+
+
+
+
+
+// =========================
+// 사진 개수만큼 행 생성
+// =========================
+
+
+let first = true;
+
+let startRow = null;
+let endRow = null;
+
+
+// 사진 개수만큼 행 생성
+
+for(const img of images){
+
+
+const row =
+sheet.addRow([
+
+first ? no : "",
+
+"",
+
+first ? r.building || "" : "",
+
+first ? r.location || "" : "",
+
+first ? r.content || "" : "",
+
+first ? r.status || "" : "",
+
+first ? time : ""
+
+]);
+
+
+
+// 병합용 행 번호 저장
+
+if(startRow === null){
+
+    startRow = row.number;
+
+}
+
+endRow = row.number;
+
+
+
+row.height = 150;
+
+
+
+row.eachCell((cell)=>{
+
+
+cell.fill={
+
+type:"pattern",
+
+pattern:"solid",
+
+fgColor:{
+argb:"FFFFFF"
+}
+
+};
+
+
+cell.alignment={
+
+vertical:"middle",
+
+horizontal:"center",
+
+wrapText:true
+
+};
+
+
+});
+
+
+
+
+
+try{
+
+
+let imageUrl =
+img.url;
+
+
+
+imageUrl =
+imageUrl.replace(
+
+"/upload/",
+
+"/upload/w_300,h_300,c_fill,q_auto,f_jpg/"
+
+);
+
+
+
+const response =
+await axios.get(
+
+imageUrl,
+
+{
+
+responseType:"arraybuffer"
+
+}
+
+);
+
+
+
+const imageId =
+workbook.addImage({
+
+buffer:response.data,
+
+extension:"jpeg"
+
+});
+
+
+
+
+sheet.addImage(
+
+imageId,
+
+{
+
+tl:{
+
+col:1,
+
+row:row.number-1
+
+},
+
+
+ext:{
+
+width:140,
+
+height:140
+
+}
+
+}
+
+);
+
+
+
+}catch(e){
+
+
+console.log(
+
+"사진 삽입 실패:",
+
+e.message
+
+);
+
+
+}
+
+
+
+first=false;
+
+
+}
+
+
+
+
+// 여러 사진이면 셀 병합
+
+if(images.length > 1){
+
+
+sheet.mergeCells(
+`A${startRow}:A${endRow}`
+);
+
+
+sheet.mergeCells(
+`C${startRow}:C${endRow}`
+);
+
+
+sheet.mergeCells(
+`D${startRow}:D${endRow}`
+);
+
+
+sheet.mergeCells(
+`E${startRow}:E${endRow}`
+);
+
+
+sheet.mergeCells(
+`F${startRow}:F${endRow}`
+);
+
+
+sheet.mergeCells(
+`G${startRow}:G${endRow}`
+);
+
+
+}
+
 
 no++;
 
 
 
 }
+
+
+
+
+
+
+// =========================
+// 테두리
+// =========================
+
+
+sheet.eachRow((row)=>{
+
+
+row.eachCell((cell)=>{
+
+
+cell.border={
+
+
+top:{
+style:"thin",
+color:{
+argb:"DDDDDD"
+}
+},
+
+
+bottom:{
+style:"thin",
+color:{
+argb:"DDDDDD"
+}
+},
+
+
+left:{
+style:"thin",
+color:{
+argb:"DDDDDD"
+}
+},
+
+
+right:{
+style:"thin",
+color:{
+argb:"DDDDDD"
+}
+}
+
+
+};
+
+
+
+});
+
+
+
+});
+
+
+
+
+
+
+
+// =========================
+// 출력 설정
+// =========================
+
+
+sheet.pageSetup={
+
+orientation:"landscape",
+
+fitToPage:true,
+
+fitToWidth:1
+
+};
+
+
+
+sheet.views=[
+
+{
+
+state:"normal",
+
+zoomScale:90
+
+}
+
+];
+
+
 
 
 
@@ -818,6 +1139,8 @@ res.setHeader(
 
 
 
+
+
 await workbook.xlsx.write(res);
 
 
@@ -825,10 +1148,13 @@ res.end();
 
 
 
+
+
 }catch(e){
 
 
 console.error(e);
+
 
 
 res.status(500).json({
@@ -845,7 +1171,6 @@ error:e.message
 
 
 });
-
 
 
 // =========================
