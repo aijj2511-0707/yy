@@ -264,6 +264,9 @@ button{
 
 </button>
 
+<button onclick="downloadExcel()">
+📥 엑셀 다운로드
+</button>
 
 <button onclick="location.href='/dashboard.html'">
 
@@ -806,7 +809,9 @@ load();
 
 setInterval(load,5000);
 
-
+function downloadExcel() {
+    window.location.href = "/reports/excel";
+}
 
 </script>
 

@@ -5,7 +5,8 @@ const multer = require("multer");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const admin = require("firebase-admin");
-
+const ExcelJS = require("exceljs");
+const axios = require("axios");
 const app = express();
 
 
@@ -495,7 +496,127 @@ res.status(500).json({
 
 
 
+// =========================
+// 신고 엑셀 다운로드
+// =========================
+app.get("/reports/excel", async (req, res) => {
 
+    try {
+
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet("불편신고");
+
+        sheet.columns = [
+            { header: "번호", width: 8 },
+            { header: "사진", width: 20 },
+            { header: "건물", width: 20 },
+            { header: "위치", width: 20 },
+            { header: "내용", width: 40 },
+            { header: "상태", width: 15 },
+            { header: "등록시간", width: 25 }
+        ];
+
+        sheet.getRow(1).font = {
+            bold: true,
+            color: { argb: "FFFFFFFF" }
+        };
+
+        sheet.getRow(1).fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "1976D2" }
+        };
+
+        const snapshot = await db
+            .collection("reports")
+            .orderBy("time", "desc")
+            .get();
+
+        let rowNumber = 2;
+        let no = 1;
+
+        for (const doc of snapshot.docs) {
+
+            const r = doc.data();
+
+            let time = "";
+
+            if (r.time?.toDate) {
+                time = r.time.toDate().toLocaleString("ko-KR");
+            }
+
+            sheet.addRow([
+                no,
+                "",
+                r.building || "",
+                r.location || "",
+                r.content || "",
+                r.status || "",
+                time
+            ]);
+
+            sheet.getRow(rowNumber).height = 80;
+
+            if (r.imageUrls && r.imageUrls.length > 0) {
+
+                try {
+
+                    const imageUrl = r.imageUrls[0].url;
+
+                    const response = await axios.get(imageUrl, {
+                        responseType: "arraybuffer"
+                    });
+
+                    const imageId = workbook.addImage({
+                        buffer: response.data,
+                        extension: "jpg"
+                    });
+
+                    sheet.addImage(imageId, {
+                        tl: { col: 1, row: rowNumber - 1 },
+                        ext: {
+                            width: 80,
+                            height: 80
+                        }
+                    });
+
+                } catch (err) {
+                    console.log("이미지 다운로드 실패:", err.message);
+                }
+
+            }
+
+            rowNumber++;
+            no++;
+
+        }
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+        res.setHeader(
+            "Content-Disposition",
+            'attachment; filename="reports.xlsx"'
+        );
+
+        await workbook.xlsx.write(res);
+
+        res.end();
+
+    } catch (err) {
+
+        console.error(err);
+
+        res.status(500).json({
+            ok: false,
+            error: err.message
+        });
+
+    }
+
+});
 
 
 
