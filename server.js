@@ -838,7 +838,7 @@ endRow = row.number;
 
 
 
-row.height = 150;
+row.height = 140;
 
 
 
@@ -938,9 +938,9 @@ row:row.number-1
 
 ext:{
 
-width:140,
+width:150,
 
-height:140
+height:150
 
 }
 
