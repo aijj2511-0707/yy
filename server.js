@@ -931,7 +931,7 @@ tl:{
 
 col:1.25,
 
-row:row.number-1 + 0.15
+row:row.number-1 + 0.1
 
 },
 
