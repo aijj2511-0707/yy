@@ -498,123 +498,351 @@ res.status(500).json({
 
 // =========================
 // 신고 엑셀 다운로드
+// 여러 사진 + 압축 이미지
 // =========================
-app.get("/reports/excel", async (req, res) => {
 
-    try {
+app.get("/reports/excel", async (req,res)=>{
 
-        const workbook = new ExcelJS.Workbook();
-        const sheet = workbook.addWorksheet("불편신고");
 
-        sheet.columns = [
-            { header: "번호", width: 8 },
-            { header: "사진", width: 20 },
-            { header: "건물", width: 20 },
-            { header: "위치", width: 20 },
-            { header: "내용", width: 40 },
-            { header: "상태", width: 15 },
-            { header: "등록시간", width: 25 }
-        ];
+try{
 
-        sheet.getRow(1).font = {
-            bold: true,
-            color: { argb: "FFFFFFFF" }
-        };
 
-        sheet.getRow(1).fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "1976D2" }
-        };
+const workbook =
+new ExcelJS.Workbook();
 
-        const snapshot = await db
-            .collection("reports")
-            .orderBy("time", "desc")
-            .get();
 
-        let rowNumber = 2;
-        let no = 1;
+const sheet =
+workbook.addWorksheet("불편신고");
 
-        for (const doc of snapshot.docs) {
 
-            const r = doc.data();
 
-            let time = "";
+// 컬럼 설정
 
-            if (r.time?.toDate) {
-                time = r.time.toDate().toLocaleString("ko-KR");
-            }
+sheet.columns=[
 
-            sheet.addRow([
-                no,
-                "",
-                r.building || "",
-                r.location || "",
-                r.content || "",
-                r.status || "",
-                time
-            ]);
+{
+header:"번호",
+width:8
+},
 
-            sheet.getRow(rowNumber).height = 80;
+{
+header:"사진",
+width:25
+},
 
-            if (r.imageUrls && r.imageUrls.length > 0) {
+{
+header:"건물",
+width:20
+},
 
-                try {
+{
+header:"위치",
+width:20
+},
 
-                    const imageUrl = r.imageUrls[0].url;
+{
+header:"내용",
+width:40
+},
 
-                    const response = await axios.get(imageUrl, {
-                        responseType: "arraybuffer"
-                    });
+{
+header:"상태",
+width:15
+},
 
-                    const imageId = workbook.addImage({
-                        buffer: response.data,
-                        extension: "jpg"
-                    });
+{
+header:"등록시간",
+width:25
+}
 
-                    sheet.addImage(imageId, {
-                        tl: { col: 1, row: rowNumber - 1 },
-                        ext: {
-                            width: 80,
-                            height: 80
-                        }
-                    });
+];
 
-                } catch (err) {
-                    console.log("이미지 다운로드 실패:", err.message);
-                }
 
-            }
 
-            rowNumber++;
-            no++;
+// 헤더 스타일
+
+sheet.getRow(1).font={
+
+bold:true,
+
+color:{
+argb:"FFFFFFFF"
+}
+
+};
+
+
+sheet.getRow(1).fill={
+
+type:"pattern",
+
+pattern:"solid",
+
+fgColor:{
+argb:"1976D2"
+}
+
+};
+
+
+
+const snapshot =
+await db
+.collection("reports")
+.orderBy("time","desc")
+.get();
+
+
+
+let row = 2;
+
+let no = 1;
+
+
+
+for(const doc of snapshot.docs){
+
+
+const r =
+doc.data();
+
+
+
+let time="";
+
+
+if(r.time?.toDate){
+
+time =
+r.time
+.toDate()
+.toLocaleString("ko-KR");
+
+}
+
+
+
+// 기본 데이터 입력
+
+
+sheet.addRow([
+
+no,
+
+"",
+
+r.building || "",
+
+r.location || "",
+
+r.content || "",
+
+r.status || "",
+
+time
+
+]);
+
+
+
+
+
+// 사진 영역
+
+let photoRow=row;
+
+
+
+if(
+r.imageUrls &&
+r.imageUrls.length>0
+){
+
+
+
+    let height =
+    90 * r.imageUrls.length;
+
+
+
+    // 행 높이 증가
+
+    sheet.getRow(row).height =
+    Math.max(90,height);
+
+
+
+    let currentRow=row-1;
+
+
+
+    for(
+    const image of r.imageUrls
+    ){
+
+
+
+        try{
+
+
+        let imageUrl =
+        image.url;
+
+
+
+        // Cloudinary 압축 변환
+
+        imageUrl =
+        imageUrl.replace(
+
+        "/upload/",
+
+        "/upload/w_500,h_500,c_fill,q_auto/"
+
+        );
+
+
+
+
+
+        const response =
+        await axios.get(
+
+        imageUrl,
+
+        {
+        responseType:"arraybuffer"
+        }
+
+        );
+
+
+
+
+
+        const imageId =
+        workbook.addImage({
+
+            buffer:
+            response.data,
+
+            extension:"jpg"
+
+        });
+
+
+
+
+
+        // 세로 배치
+
+        sheet.addImage(
+
+        imageId,
+
+        {
+
+        tl:{
+            col:1,
+            row:currentRow
+        },
+
+
+        ext:{
+
+            width:90,
+
+            height:90
 
         }
 
-        res.setHeader(
-            "Content-Type",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        );
 
-        res.setHeader(
-            "Content-Disposition",
-            'attachment; filename="reports.xlsx"'
-        );
-
-        await workbook.xlsx.write(res);
-
-        res.end();
-
-    } catch (err) {
-
-        console.error(err);
-
-        res.status(500).json({
-            ok: false,
-            error: err.message
         });
 
+
+
+        currentRow++;
+
+
+
+        }catch(e){
+
+
+        console.log(
+        "이미지 오류:",
+        e.message
+        );
+
+
+        }
+
+
+
     }
+
+
+
+}
+
+
+
+
+row++;
+
+no++;
+
+
+
+}
+
+
+
+
+res.setHeader(
+
+"Content-Type",
+
+"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+);
+
+
+
+res.setHeader(
+
+"Content-Disposition",
+
+'attachment; filename="reports.xlsx"'
+
+);
+
+
+
+await workbook.xlsx.write(res);
+
+
+res.end();
+
+
+
+}catch(e){
+
+
+console.error(e);
+
+
+res.status(500).json({
+
+ok:false,
+
+error:e.message
+
+});
+
+
+}
+
+
 
 });
 
